@@ -13,27 +13,33 @@ pipeline {
 
   stages {
   stage('Wait for Thread Completion') {
-      steps {
-        script {
-          def isRunning = true
-          while (isRunning) {
-            try {
-              // Check the status of the thread
-              def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
-              def jsonResponse = new JsonSlurper().parseText(response)
-              isRunning = jsonResponse.is_thread_running
-              if (isRunning) {
-                echo "Thread is still running. Waiting..."
-                sleep 30 // Wait for 30 seconds before checking again
-              }
-            } catch (Exception e) {
-              error "Failed to check thread status: ${e.message}"
-            }
+  steps {
+    script {
+      def isRunning = true
+      while (isRunning) {
+        try {
+          // Run curl and clean the response
+          def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
+          response = response.replaceAll("[\\r\\n]", "") // Remove extra newlines/carriage returns
+          echo "Response from server: ${response}"
+
+          // Parse the cleaned response
+          def jsonResponse = new JsonSlurper().parseText(response)
+          isRunning = jsonResponse.is_thread_running
+
+          if (isRunning) {
+            echo "Thread is still running. Waiting..."
+            sleep 30
           }
-          echo "Thread has completed."
+        } catch (Exception e) {
+          error "Failed to check thread status: ${e.message}"
         }
       }
+      echo "Thread has completed."
     }
+  }
+}
+
     stage('Stop Existing Container') {
       steps {
         script {
