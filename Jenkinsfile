@@ -8,23 +8,38 @@ pipeline {
   environment {
     DOCKER_IMAGE = "flask-city-api" // Ensure this is in lowercase
     DOCKER_CONTAINER_NAME = "cityapi"
-    REPO_URL = "https://github.com/wajahatashraf/flaskapi.git"
+    REPO_URL = "https://github.com/wajahatashraf/activethreads.git"
   }
 
   stages {
     stage('Stop Existing Container') {
       steps {
-        bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
+        script {
+          def stopResult = bat(script: "docker stop ${DOCKER_CONTAINER_NAME}", returnStatus: true)
+          if (stopResult != 0) {
+            echo "No container to stop or an error occurred."
+          }
+        }
       }
     }
     stage('Remove Existing Container') {
       steps {
-        bat "docker rm ${DOCKER_CONTAINER_NAME} || exit 0"
+        script {
+          def removeResult = bat(script: "docker rm ${DOCKER_CONTAINER_NAME}", returnStatus: true)
+          if (removeResult != 0) {
+            echo "No container to remove or an error occurred."
+          }
+        }
       }
     }
     stage('Delete Existing Image') {
       steps {
-        bat "docker image rm ${DOCKER_IMAGE} || exit 0"
+        script {
+          def imageResult = bat(script: "docker image rm ${DOCKER_IMAGE}", returnStatus: true)
+          if (imageResult != 0) {
+            echo "No image to remove or an error occurred."
+          }
+        }
       }
     }
     stage('Wait for Thread Completion') {
