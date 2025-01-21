@@ -25,24 +25,6 @@ pipeline {
         bat "docker image rm ${DOCKER_IMAGE} || exit 0"
       }
     }
-    stage('Wait for Thread Completion') {
-      steps {
-        script {
-          def isRunning = true
-          while (isRunning) {
-            // Check the status of the thread
-            def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
-            def jsonResponse = readJSON(text: response)
-            isRunning = jsonResponse.is_thread_running
-            if (isRunning) {
-              echo "Thread is still running. Waiting..."
-              sleep 30 // Wait for 30 seconds before checking again
-            }
-          }
-          echo "Thread has completed."
-        }
-      }
-    }
     stage('Build') {
       steps {
         bat "docker build -t ${DOCKER_IMAGE} ."
