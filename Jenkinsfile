@@ -35,7 +35,7 @@ pipeline {
     stage('Delete Existing Image') {
       steps {
         script {
-          def imageResult = bat(script: "docker image rm ${DOCKER_IMAGE}", returnStatus: true)
+          def imageResult = bat(script: "docker image rm ${DOCKER_IMAGE} --force", returnStatus: true)
           if (imageResult != 0) {
             echo "No image to remove or an error occurred."
           }
@@ -47,13 +47,17 @@ pipeline {
         script {
           def isRunning = true
           while (isRunning) {
-            // Check the status of the thread
-            def response = bat(script: "curl -s http://localhost:5000/check_thread", returnStdout: true).trim()
-            def jsonResponse = new JsonSlurper().parseText(response)
-            isRunning = jsonResponse.is_thread_running
-            if (isRunning) {
-              echo "Thread is still running. Waiting..."
-              sleep 30 // Wait for 30 seconds before checking again
+            try {
+              // Check the status of the thread
+              def response = bat(script: "curl -s http://localhost:5000/check_thread", returnStdout: true).trim()
+              def jsonResponse = new JsonSlurper().parseText(response)
+              isRunning = jsonResponse.is_thread_running
+              if (isRunning) {
+                echo "Thread is still running. Waiting..."
+                sleep 30 // Wait for 30 seconds before checking again
+              }
+            } catch (Exception e) {
+              error "Failed to check thread status: ${e.message}"
             }
           }
           echo "Thread has completed."
