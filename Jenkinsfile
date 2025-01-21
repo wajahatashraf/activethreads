@@ -41,7 +41,9 @@ pipeline {
             sleep 30
           }
         } catch (Exception e) {
-          error "Error while checking thread status: ${e.message}\nRaw response:\n${rawResponse}"
+          // Ensure `rawResponse` is included in the error message only if it's defined
+          def rawResponseMsg = rawResponse ? "\nRaw response:\n${rawResponse}" : ""
+          error "Error while checking thread status: ${e.message}${rawResponseMsg}"
         }
       }
       echo "Thread has completed."
