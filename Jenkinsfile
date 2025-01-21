@@ -18,13 +18,19 @@ pipeline {
       def isRunning = true
       while (isRunning) {
         try {
-          // Run curl and clean the response
+          // Run curl command
           def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
-          response = response.replaceAll("[\\r\\n]", "") // Remove extra newlines/carriage returns
-          echo "Response from server: ${response}"
 
-          // Parse the cleaned response
-          def jsonResponse = new JsonSlurper().parseText(response)
+          // Extract the JSON part of the response
+          def jsonResponseString = response.find(/\{.*\}/) // Extract content between { and }
+          if (!jsonResponseString) {
+            error "No JSON response found in: ${response}"
+          }
+
+          echo "Extracted JSON response: ${jsonResponseString}"
+
+          // Parse the JSON response
+          def jsonResponse = new groovy.json.JsonSlurper().parseText(jsonResponseString)
           isRunning = jsonResponse.is_thread_running
 
           if (isRunning) {
