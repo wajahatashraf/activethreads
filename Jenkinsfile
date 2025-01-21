@@ -18,27 +18,29 @@ pipeline {
       def isRunning = true
       while (isRunning) {
         try {
-          // Run curl command
-          def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
+          // Run curl command and capture output
+          def response = bat(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
 
-          // Extract the JSON part of the response
-          def jsonResponseString = response.find(/\{.*\}/) // Extract content between { and }
+          // Extract only the JSON part
+          def jsonResponseString = response.find(/\{.*\}/)
           if (!jsonResponseString) {
-            error "No JSON response found in: ${response}"
+            error "No JSON response found in:\n${response}"
           }
 
-          echo "Extracted JSON response: ${jsonResponseString}"
+          // Debugging: Print the raw response and extracted JSON
+          echo "Raw response: ${response}"
+          echo "Extracted JSON: ${jsonResponseString}"
 
-          // Parse the JSON response
+          // Parse JSON response
           def jsonResponse = new groovy.json.JsonSlurper().parseText(jsonResponseString)
           isRunning = jsonResponse.is_thread_running
 
           if (isRunning) {
-            echo "Thread is still running. Waiting..."
+            echo "Thread is still running. Retrying in 30 seconds..."
             sleep 30
           }
         } catch (Exception e) {
-          error "Failed to check thread status: ${e.message}"
+          error "Error while checking thread status: ${e.message}"
         }
       }
       echo "Thread has completed."
