@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 pipeline {
   agent any
   options {
@@ -32,7 +34,7 @@ pipeline {
           while (isRunning) {
             // Check the status of the thread
             def response = bat(script: "curl -s http://localhost:5000/check_thread", returnStdout: true).trim()
-            def jsonResponse = readJSON(text: response)
+            def jsonResponse = new JsonSlurper().parseText(response)
             isRunning = jsonResponse.is_thread_running
             if (isRunning) {
               echo "Thread is still running. Waiting..."
