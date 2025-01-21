@@ -31,7 +31,7 @@ pipeline {
           def isRunning = true
           while (isRunning) {
             // Check the status of the thread
-            def response = bat(script: "curl -s http://localhost:3000/check_thread", returnStdout: true).trim()
+            def response = bat(script: "curl -s http://localhost:5000/check_thread", returnStdout: true).trim()
             def jsonResponse = readJSON(text: response)
             isRunning = jsonResponse.is_thread_running
             if (isRunning) {
