@@ -22,6 +22,7 @@ pipeline {
           def rawResponse = ""
           def hostUrl = params.HOST_URL
           echo "Using HOST_URL: ${hostUrl}"
+          echo "Jenkins URL: ${env.JENKINS_URL}"
           while (attempts < retries) {
             try {
               // Run the curl command and capture the response body as plain text
