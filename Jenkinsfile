@@ -15,37 +15,51 @@ pipeline {
     steps {
       script {
         def isRunning = true
+        def retries = 2  // Number of retries if URL does not respond
+
         while (isRunning) {
-          try {
-            // Run the curl command and capture the response body as plain text
-            def rawResponse = bat(
-              script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
-              returnStdout: true
-            )?.trim()
+          def attempts = 0
+          def rawResponse = ""
 
-            // Log the raw response
-            echo "Raw response: ${rawResponse}"
+          while (attempts < retries) {
+            try {
+              // Run the curl command and capture the response body as plain text
+              rawResponse = bat(
+                script: '@curl -s --max-time 10 http://localhost:3001/check_thread',
+                returnStdout: true
+              )?.trim()
 
-            // Check if the response indicates the thread is running
-            if (rawResponse == "is_thread_running=True") {
-              isRunning = true
-              echo "Thread is still running. Retrying in 30 seconds..."
-              sleep(30)
-            } else if (rawResponse == "is_thread_running=False") {
-              isRunning = false
-              echo "Thread has completed. Moving to the next stage."
-              // No sleep needed when thread is completed
-            } else {
-              // Handle any unexpected response
-              echo "Unexpected response: ${rawResponse}. Retrying in 30 seconds..."
-              isRunning = true
-              sleep(30)
+              // Log the raw response
+              echo "Raw response: ${rawResponse}"
+
+              // Check if the response indicates the thread is running
+              if (rawResponse == "is_thread_running=True") {
+                isRunning = true
+                echo "Thread is still running. Retrying in 30 seconds..."
+                sleep(30)
+                break  // Break the inner loop and retry after the delay
+              } else if (rawResponse == "is_thread_running=False") {
+                isRunning = false
+                echo "Thread has completed. Moving to the next stage."
+                break  // Exit the loop since the thread has completed
+              } else {
+                // Handle any unexpected response
+                echo "Unexpected response: ${rawResponse}. Retrying in 30 seconds..."
+                attempts++
+                sleep(30)  // Wait for 30 seconds before retrying
+              }
+            } catch (Exception e) {
+              // Retry silently if any error occurs
+              echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
+              attempts++
+              sleep(30)  // Wait for 30 seconds before retrying
             }
+          }
 
-          } catch (Exception e) {
-            // Retry silently if any error occurs
-            echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
-            sleep(30)
+          // If the URL failed to respond after the retries, exit the loop
+          if (attempts >= retries) {
+            echo "URL did not respond after ${retries} attempts. Moving to the next stage."
+            isRunning = false
           }
         }
       }
