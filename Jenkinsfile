@@ -18,22 +18,21 @@ pipeline {
       def isRunning = true
       while (isRunning) {
         try {
-          // Run the curl command and get output
-          def rawResponse = bat(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
-
-          // Extract only the JSON part using regex
-          def jsonResponseString = rawResponse.find(/\{.*\}/)
-          if (!jsonResponseString) {
-            error "No valid JSON found in the response:\n${rawResponse}"
-          }
-
-          // Debugging: Show the extracted JSON
-          echo "Extracted JSON: ${jsonResponseString}"
+          // Run the curl command and capture the output
+          def rawResponse = sh(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
 
           // Parse JSON response
-          def jsonResponse = new groovy.json.JsonSlurper().parseText(jsonResponseString)
+          def jsonResponse = new groovy.json.JsonSlurper().parseText(rawResponse)
+
+          // Debugging: Show the full raw response and parsed JSON
+          echo "Raw response: ${rawResponse}"
+          echo "Parsed JSON: ${jsonResponse}"
 
           // Check the thread status
+          if (!jsonResponse.containsKey('is_thread_running')) {
+            error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
+          }
+
           isRunning = jsonResponse.is_thread_running
 
           if (isRunning) {
@@ -41,12 +40,10 @@ pipeline {
             sleep 30
           }
         } catch (Exception e) {
-          // Ensure `rawResponse` is included in the error message only if it's defined
-          def rawResponseMsg = rawResponse ? "\nRaw response:\n${rawResponse}" : ""
-          error "Error while checking thread status: ${e.message}${rawResponseMsg}"
+          error "Error while checking thread status: ${e.message}"
         }
       }
-      echo "Thread has completed."
+      echo "Thread has completed. Moving to the next stage."
     }
   }
 }
