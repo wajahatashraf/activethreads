@@ -12,41 +12,41 @@ pipeline {
   }
 
   stages {
-  stage('Wait for Thread Completion') {
-  steps {
-    script {
-      def isRunning = true
-      while (isRunning) {
-        try {
-          // Run the curl command and capture the output
-          def rawResponse = sh(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
+    stage('Wait for Thread Completion') {
+      steps {
+        script {
+          def isRunning = true
+          while (isRunning) {
+            try {
+              // Run the curl command and capture the output
+              def rawResponse = bat(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
 
-          // Parse JSON response
-          def jsonResponse = new groovy.json.JsonSlurper().parseText(rawResponse)
+              // Parse JSON response
+              def jsonResponse = new JsonSlurper().parseText(rawResponse)
 
-          // Debugging: Show the full raw response and parsed JSON
-          echo "Raw response: ${rawResponse}"
-          echo "Parsed JSON: ${jsonResponse}"
+              // Debugging: Show the full raw response and parsed JSON
+              echo "Raw response: ${rawResponse}"
+              echo "Parsed JSON: ${jsonResponse}"
 
-          // Check the thread status
-          if (!jsonResponse.containsKey('is_thread_running')) {
-            error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
+              // Check the thread status
+              if (!jsonResponse.containsKey('is_thread_running')) {
+                error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
+              }
+
+              isRunning = jsonResponse.is_thread_running
+
+              if (isRunning) {
+                echo "Thread is still running. Retrying in 30 seconds..."
+                sleep 30
+              }
+            } catch (Exception e) {
+              error "Error while checking thread status: ${e.message}"
+            }
           }
-
-          isRunning = jsonResponse.is_thread_running
-
-          if (isRunning) {
-            echo "Thread is still running. Retrying in 30 seconds..."
-            sleep 30
-          }
-        } catch (Exception e) {
-          error "Error while checking thread status: ${e.message}"
+          echo "Thread has completed. Moving to the next stage."
         }
       }
-      echo "Thread has completed. Moving to the next stage."
     }
-  }
-}
 
     stage('Stop Existing Container') {
       steps {
@@ -58,6 +58,7 @@ pipeline {
         }
       }
     }
+
     stage('Remove Existing Container') {
       steps {
         script {
@@ -68,6 +69,7 @@ pipeline {
         }
       }
     }
+
     stage('Delete Existing Image') {
       steps {
         script {
@@ -84,6 +86,7 @@ pipeline {
         bat "docker build -t ${DOCKER_IMAGE} ."
       }
     }
+
     stage('Deploy') {
       steps {
         bat """
