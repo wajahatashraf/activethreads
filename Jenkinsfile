@@ -34,7 +34,7 @@ pipeline {
       steps {
         // Run container with dynamic port assignment
         bat """
-          docker run -d -p 0:5000 --restart unless-stopped ^
+          docker run -d -p 3000:4000 --restart unless-stopped ^
           --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}
         """
 
