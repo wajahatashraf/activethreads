@@ -32,21 +32,23 @@ pipeline {
 
               // Check if the key 'is_thread_running' exists
               if (!jsonResponse.containsKey('is_thread_running')) {
-                error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
+                echo "Warning: The response does not contain the 'is_thread_running' key:\n${rawResponse}"
+              } else {
+                // Update the isRunning status
+                isRunning = jsonResponse.is_thread_running
               }
-
-              // Update the isRunning status
-              isRunning = jsonResponse.is_thread_running
 
               if (isRunning) {
                 echo "Thread is still running. Retrying in 30 seconds..."
                 sleep 30
+              } else {
+                echo "Thread has completed. Moving to the next stage."
               }
             } catch (Exception e) {
-              error "Error while checking thread status: ${e.message}"
+              echo "Error while checking thread status: ${e.message}. Retrying in 30 seconds..."
+              sleep 30
             }
           }
-          echo "Thread has completed. Moving to the next stage."
         }
       }
     }
