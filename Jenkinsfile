@@ -10,11 +10,25 @@ pipeline {
   }
 
   stages {
-    stage('Stop Existing Container') {
+  stage('Check Existing Container') {
       steps {
-        bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
+        script {
+          def containerRunning = sh(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
+          if (containerRunning) {
+            def port = sh(script: "docker port ${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
+            echo "Container ${DOCKER_CONTAINER_NAME} is already running on port: ${port}"
+            currentBuild.result = 'SUCCESS' // Avoid stopping the pipeline if container exists
+            return // Skip remaining stages
+          }
+        }
       }
     }
+
+//     stage('Stop Existing Container') {
+//       steps {
+//         bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
+//       }
+//     }
     stage('Remove Existing Container') {
       steps {
         bat "docker rm ${DOCKER_CONTAINER_NAME} || exit 0"
