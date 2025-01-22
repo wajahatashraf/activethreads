@@ -10,12 +10,12 @@ pipeline {
   }
 
   stages {
-  stage('Check Existing Container') {
+    stage('Check Existing Container') {
       steps {
         script {
-          def containerRunning = sh(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
+          def containerRunning = bat(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
           if (containerRunning) {
-            def port = sh(script: "docker port ${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
+            def port = bat(script: "docker port ${DOCKER_CONTAINER_NAME}", returnStdout: true).trim()
             echo "Container ${DOCKER_CONTAINER_NAME} is already running on port: ${port}"
             currentBuild.result = 'SUCCESS' // Avoid stopping the pipeline if container exists
             return // Skip remaining stages
@@ -24,30 +24,34 @@ pipeline {
       }
     }
 
-//     stage('Stop Existing Container') {
-//       steps {
-//         bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
-//       }
-//     }
+    stage('Stop Existing Container') {
+      steps {
+        bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
+      }
+    }
+
     stage('Remove Existing Container') {
       steps {
         bat "docker rm ${DOCKER_CONTAINER_NAME} || exit 0"
       }
     }
+
     stage('Delete Existing Image') {
       steps {
         bat "docker image rm ${DOCKER_IMAGE} || exit 0"
       }
     }
+
     stage('Build') {
       steps {
         bat "docker build -t ${DOCKER_IMAGE} ."
       }
     }
+
     stage('Deploy') {
       steps {
         bat """
-          docker run -d -p 3000:5000 --restart unless-stopped ^
+          docker run -d -p 5000:5000 --restart unless-stopped ^
           --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}
         """
       }
