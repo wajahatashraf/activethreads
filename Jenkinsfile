@@ -11,45 +11,48 @@ pipeline {
   }
 
   stages {
-    stage('Wait for Thread Completion') {
-  steps {
-    script {
-      def isRunning = true
-      while (isRunning) {
-        try {
-          // Run the curl command and capture the response body as plain text
-          def rawResponse = bat(
-            script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
-            returnStdout: true
-          )?.trim()
+  stage('Wait for Thread Completion') {
+    steps {
+      script {
+        def isRunning = true
+        while (isRunning) {
+          try {
+            // Run the curl command and capture the response body as plain text
+            def rawResponse = bat(
+              script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
+              returnStdout: true
+            )?.trim()
 
-          // Log the raw response
-          echo "Raw response: ${rawResponse}"
+            // Log the raw response
+            echo "Raw response: ${rawResponse}"
 
-          // Check if the response indicates the thread is running
-          if (rawResponse == "is_thread_running=True") {
-            isRunning = true
-            echo "Thread is still running. Retrying in 30 seconds..."
-          } else if (rawResponse == "is_thread_running=False") {
-            isRunning = false
-            echo "Thread has completed. Moving to the next stage."
-          } else {
-            // Handle any unexpected response
-            echo "Unexpected response: ${rawResponse}. Retrying in 30 seconds..."
-            isRunning = true
+            // Check if the response indicates the thread is running
+            if (rawResponse == "is_thread_running=True") {
+              isRunning = true
+              echo "Thread is still running. Retrying in 30 seconds..."
+              sleep(30)
+            } else if (rawResponse == "is_thread_running=False") {
+              isRunning = false
+              echo "Thread has completed. Moving to the next stage."
+              // No sleep needed when thread is completed
+            } else {
+              // Handle any unexpected response
+              echo "Unexpected response: ${rawResponse}. Retrying in 30 seconds..."
+              isRunning = true
+              sleep(30)
+            }
+
+          } catch (Exception e) {
+            // Retry silently if any error occurs
+            echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
+            sleep(30)
           }
-
-          // Sleep for 30 seconds before retrying
-          sleep(30)
-        } catch (Exception e) {
-          // Retry silently if any error occurs
-          echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
-          sleep(30)
         }
       }
     }
   }
-}
+
+
 
 
 
