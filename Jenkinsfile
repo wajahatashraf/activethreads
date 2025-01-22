@@ -24,22 +24,29 @@ pipeline {
             returnStdout: true
           )?.trim()
 
-          // If the response is null or empty, retry silently
+          // Ensure rawResponse is not null or empty
           if (!rawResponse) {
             echo "No response received from the server. Retrying in 30 seconds..."
             sleep(30)
             continue
           }
 
-          // Log the raw response
+          // Debug log: Print rawResponse
           echo "Raw response: ${rawResponse}"
+
+          // Ensure the rawResponse is valid JSON before parsing
+          if (!rawResponse.startsWith("{") || !rawResponse.endsWith("}")) {
+            echo "Invalid JSON response: ${rawResponse}. Retrying in 30 seconds..."
+            sleep(30)
+            continue
+          }
 
           // Parse JSON response
           def jsonResponse = new JsonSlurper().parseText(rawResponse)
 
-          // Check if the key 'is_thread_running' exists
-          if (jsonResponse?.is_thread_running == null) {
-            echo "The response does not contain the 'is_thread_running' key. Retrying in 30 seconds..."
+          // Check if the key 'is_thread_running' exists and is a boolean
+          if (jsonResponse?.is_thread_running == null || !(jsonResponse.is_thread_running instanceof Boolean)) {
+            echo "The response does not contain a valid 'is_thread_running' key. Retrying in 30 seconds..."
             sleep(30)
             continue
           }
@@ -52,7 +59,7 @@ pipeline {
             sleep(30)
           }
         } catch (Exception e) {
-          // Handle errors gracefully without unnecessary logs
+          // Handle unexpected errors gracefully
           echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
           sleep(30)
         }
@@ -61,6 +68,7 @@ pipeline {
     }
   }
 }
+
 
     stage('Stop Existing Container') {
       steps {
