@@ -22,21 +22,37 @@ pipeline {
               def rawResponse = bat(
                 script: '@curl -s http://localhost:3000/check_thread',
                 returnStdout: true
-              ).trim()
+              )?.trim()
+
+              // Handle null or empty response
+              if (!rawResponse) {
+                echo "Warning: Received null or empty response from the server. Retrying in 30 seconds..."
+                sleep 30
+                continue
+              }
 
               // Debugging: Show the raw response
               echo "Raw response: ${rawResponse}"
 
               // Parse JSON response
-              def jsonResponse = new JsonSlurper().parseText(rawResponse)
+              def jsonResponse
+              try {
+                jsonResponse = new JsonSlurper().parseText(rawResponse)
+              } catch (Exception parseException) {
+                echo "Warning: Failed to parse JSON response. Retrying in 30 seconds..."
+                sleep 30
+                continue
+              }
 
               // Check if the key 'is_thread_running' exists
               if (!jsonResponse.containsKey('is_thread_running')) {
-                echo "Warning: The response does not contain the 'is_thread_running' key:\n${rawResponse}"
-              } else {
-                // Update the isRunning status
-                isRunning = jsonResponse.is_thread_running
+                echo "Warning: Response does not contain 'is_thread_running' key. Retrying in 30 seconds..."
+                sleep 30
+                continue
               }
+
+              // Update the isRunning status
+              isRunning = jsonResponse.is_thread_running
 
               if (isRunning) {
                 echo "Thread is still running. Retrying in 30 seconds..."

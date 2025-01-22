@@ -26,7 +26,7 @@ def get_cities_id_list():
 
         def initialize_update_analysis():
             global is_thread_running
-            time.sleep(300)  # Sleep for 5 minutes
+            time.sleep(120)  # Sleep for 2 minutes
 
             # Assuming the processing is done, reset the flag
             is_thread_running = False
