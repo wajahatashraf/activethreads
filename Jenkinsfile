@@ -1,4 +1,3 @@
-import groovy.json.JsonSlurper
 
 pipeline {
   agent any
@@ -18,7 +17,7 @@ pipeline {
       def isRunning = true
       while (isRunning) {
         try {
-          // Run the curl command and capture the response
+          // Run the curl command and capture the response body as plain text
           def rawResponse = bat(
             script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
             returnStdout: true
@@ -27,34 +26,30 @@ pipeline {
           // Log the raw response
           echo "Raw response: ${rawResponse}"
 
-          // Check if rawResponse is null or empty
-          if (!rawResponse) {
-            echo "No response received from the server. Retrying in 30 seconds..."
-            sleep(30)
-            continue
-          }
-
-          // Parse the response as JSON
-          def jsonResponse = new JsonSlurper().parseText(rawResponse)
-
-          // Check and set the isRunning variable
-          if (jsonResponse?.is_thread_running == true) {
+          // Check if the response indicates the thread is running
+          if (rawResponse == "is_thread_running=True") {
+            isRunning = true
             echo "Thread is still running. Retrying in 30 seconds..."
-            sleep(30)
-          } else {
+          } else if (rawResponse == "is_thread_running=False") {
             isRunning = false
+            echo "Thread has completed. Moving to the next stage."
+          } else {
+            // Handle any unexpected response
+            echo "Unexpected response: ${rawResponse}. Retrying in 30 seconds..."
+            isRunning = true
           }
+
+          // Sleep for 30 seconds before retrying
+          sleep(30)
         } catch (Exception e) {
-          // Catch any exceptions and retry
+          // Retry silently if any error occurs
           echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
           sleep(30)
         }
       }
-      echo "Thread has completed. Moving to the next stage."
     }
   }
 }
-
 
 
 

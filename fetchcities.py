@@ -46,7 +46,7 @@ def get_cities_id_list():
 @app.route('/check_thread', methods=['GET'])
 def check_thread():
     """Endpoint to check if the update analysis thread is running."""
-    return jsonify({"is_thread_running": is_thread_running}), 200
+    return f"is_thread_running={is_thread_running}", 200
 
 
 if __name__ == '__main__':
