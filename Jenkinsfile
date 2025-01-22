@@ -12,22 +12,11 @@ pipeline {
   stages {
     stage('Stop Existing Container') {
       steps {
-        script {
-          // Check if the container is running
-          def existingPort = sh(script: "docker port ${DOCKER_CONTAINER_NAME} 5000 | awk -F: '{print \$2}'", returnStdout: true).trim()
-
-          // If the container is running, print the port
-          if (existingPort) {
-            echo "The existing container is running on port: ${existingPort}"
-          } else {
-            echo "The container is not running."
-          }
-        }
+        bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
       }
     }
     stage('Remove Existing Container') {
       steps {
-        bat "docker stop ${DOCKER_CONTAINER_NAME} || exit 0"
         bat "docker rm ${DOCKER_CONTAINER_NAME} || exit 0"
       }
     }
