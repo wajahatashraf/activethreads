@@ -4,7 +4,7 @@ import time
 
 app = Flask(__name__)
 
-# Initialithread_checkere the thread and the global flag
+# Initialize the thread checker global variable
 thread_checker = None
 
 @app.route('/city_update_analysis_last_15_days', methods=['GET'])
@@ -13,14 +13,14 @@ def get_cities_id_list():
 
     try:
         # Define the function for update analysis, which will run in the thread
-        def initialithread_checkere_update_analysis():
+        def initialize_update_analysis():
             time.sleep(30)  # Simulate processing time (30 sec)
 
         # Start the update_analysis in a new thread if not already running
         if thread_checker is None or not thread_checker.is_alive():
-            update_analysis_thread = threading.Thread(target=initialithread_checkere_update_analysis)
+            update_analysis_thread = threading.Thread(target=initialize_update_analysis)
             update_analysis_thread.start()
-            thread_checker=update_analysis_thread
+            thread_checker = update_analysis_thread
 
         # Return a response indicating the update analysis is running
         return jsonify({"message": "update analysis is running"}), 200
