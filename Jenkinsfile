@@ -18,7 +18,7 @@ pipeline {
       def isRunning = true
       while (isRunning) {
         try {
-          // Run the curl command and capture only the response body
+          // Run the curl command and capture the response
           def rawResponse = bat(
             script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
             returnStdout: true
@@ -27,19 +27,26 @@ pipeline {
           // Log the raw response
           echo "Raw response: ${rawResponse}"
 
-          // Parse JSON response directly
+          // Check if rawResponse is null or empty
+          if (!rawResponse) {
+            echo "No response received from the server. Retrying in 30 seconds..."
+            sleep(30)
+            continue
+          }
+
+          // Parse the response as JSON
           def jsonResponse = new JsonSlurper().parseText(rawResponse)
 
-          // Update the isRunning status based on the parsed response
-          isRunning = jsonResponse.is_thread_running ?: false
-
-          if (isRunning) {
+          // Check and set the isRunning variable
+          if (jsonResponse?.is_thread_running == true) {
             echo "Thread is still running. Retrying in 30 seconds..."
             sleep(30)
+          } else {
+            isRunning = false
           }
         } catch (Exception e) {
-          // Retry silently if any error occurs
-          echo "Error occurred while checking thread status: Retrying in 30 seconds..."
+          // Catch any exceptions and retry
+          echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
           sleep(30)
         }
       }
@@ -47,6 +54,7 @@ pipeline {
     }
   }
 }
+
 
 
 
