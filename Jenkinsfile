@@ -13,47 +13,54 @@ pipeline {
 
   stages {
     stage('Wait for Thread Completion') {
-      steps {
-        script {
-          def isRunning = true
-          while (isRunning) {
-            try {
-              // Run the curl command and capture only the response body
-              def rawResponse = bat(
-                script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
-                returnStdout: true
-              )?.trim()
+  steps {
+    script {
+      def isRunning = true
+      while (isRunning) {
+        try {
+          // Run the curl command and capture only the response body
+          def rawResponse = bat(
+            script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
+            returnStdout: true
+          )?.trim()
 
-              // Skip to the next iteration if response is null or empty
-              if (!rawResponse) {
-                sleep(30)
-                continue
-              }
-
-              // Parse JSON response
-              def jsonResponse = new JsonSlurper().parseText(rawResponse)
-
-              // Check if the key 'is_thread_running' exists and update the isRunning status
-              if (jsonResponse?.is_thread_running == null) {
-                sleep(30)
-                continue
-              }
-
-              isRunning = jsonResponse.is_thread_running
-
-              // Log status only when the thread is running
-              if (isRunning) {
-                sleep(30)
-              }
-            } catch (Exception ignored) {
-              // Suppress exceptions and silently retry
-              sleep(30)
-            }
+          // If the response is null or empty, retry silently
+          if (!rawResponse) {
+            echo "No response received from the server. Retrying in 30 seconds..."
+            sleep(30)
+            continue
           }
-          echo "Thread has completed. Moving to the next stage."
+
+          // Log the raw response
+          echo "Raw response: ${rawResponse}"
+
+          // Parse JSON response
+          def jsonResponse = new JsonSlurper().parseText(rawResponse)
+
+          // Check if the key 'is_thread_running' exists
+          if (jsonResponse?.is_thread_running == null) {
+            echo "The response does not contain the 'is_thread_running' key. Retrying in 30 seconds..."
+            sleep(30)
+            continue
+          }
+
+          // Update the isRunning status
+          isRunning = jsonResponse.is_thread_running
+
+          if (isRunning) {
+            echo "Thread is still running. Retrying in 30 seconds..."
+            sleep(30)
+          }
+        } catch (Exception e) {
+          // Handle errors gracefully without unnecessary logs
+          echo "Error occurred while checking thread status: ${e.message}. Retrying in 30 seconds..."
+          sleep(30)
         }
       }
+      echo "Thread has completed. Moving to the next stage."
     }
+  }
+}
 
     stage('Stop Existing Container') {
       steps {
