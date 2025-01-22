@@ -25,7 +25,7 @@ pipeline {
             try {
               // Run the curl command and capture the response body as plain text
               rawResponse = bat(
-                script: '@curl -s --max-time 10 http://localhost:3001/check_thread',
+                script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
                 returnStdout: true
               )?.trim()
 
