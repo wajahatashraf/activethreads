@@ -7,7 +7,7 @@ pipeline {
   environment {
     DOCKER_IMAGE = "flask-city-api" // Ensure this is in lowercase
     DOCKER_CONTAINER_NAME = "cityapi"
-    THREAD_CHECK_URL = "http://localhost:3000/check_thread" 
+    THREAD_CHECK_URL = "http://localhost:3000/check_thread"
   }
 
   stages {

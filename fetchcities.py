@@ -71,6 +71,7 @@ def get_other_thread_status():
 def check_thread():
     """Endpoint to check if any thread is running."""
     # Check if any thread is alive
+    print(thread_checker.check_threads())
     if thread_checker.check_threads():
         return "is_thread_running=True", 200
     else:
