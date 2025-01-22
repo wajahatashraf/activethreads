@@ -18,21 +18,24 @@ pipeline {
           def isRunning = true
           while (isRunning) {
             try {
-              // Run the curl command and capture the output
-              def rawResponse = bat(script: 'curl -s http://localhost:3000/check_thread', returnStdout: true).trim()
+              // Run the curl command and capture only the response body
+              def rawResponse = bat(
+                script: '@curl -s http://localhost:3000/check_thread',
+                returnStdout: true
+              ).trim()
+
+              // Debugging: Show the raw response
+              echo "Raw response: ${rawResponse}"
 
               // Parse JSON response
               def jsonResponse = new JsonSlurper().parseText(rawResponse)
 
-              // Debugging: Show the full raw response and parsed JSON
-              echo "Raw response: ${rawResponse}"
-              echo "Parsed JSON: ${jsonResponse}"
-
-              // Check the thread status
+              // Check if the key 'is_thread_running' exists
               if (!jsonResponse.containsKey('is_thread_running')) {
                 error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
               }
 
+              // Update the isRunning status
               isRunning = jsonResponse.is_thread_running
 
               if (isRunning) {
