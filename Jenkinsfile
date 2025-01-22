@@ -1,4 +1,3 @@
-import groovy.json.JsonSlurper
 
 pipeline {
   agent any
@@ -18,7 +17,7 @@ pipeline {
           def isRunning = true
           while (isRunning) {
             try {
-              // Run the curl command and capture only the response body
+              // Run a curl command to check the thread status
               def rawResponse = bat(
                 script: '@curl -s http://localhost:3000/check_thread',
                 returnStdout: true
@@ -27,26 +26,31 @@ pipeline {
               // Debugging: Show the raw response
               echo "Raw response: ${rawResponse}"
 
-              // Parse JSON response
+              // Parse the JSON response
               def jsonResponse = new JsonSlurper().parseText(rawResponse)
 
-              // Check if the key 'is_thread_running' exists
+              // Ensure the response contains the 'is_thread_running' key
               if (!jsonResponse.containsKey('is_thread_running')) {
-                error "The response does not contain the 'is_thread_running' key:\n${rawResponse}"
-              }
-
-              // Update the isRunning status
-              isRunning = jsonResponse.is_thread_running
-
-              if (isRunning) {
-                echo "Thread is still running. Retrying in 30 seconds..."
-                sleep 30
+                echo "The response does not contain the 'is_thread_running' key. Retrying in 30 seconds..."
+              } else {
+                // Update the isRunning flag based on the response
+                isRunning = jsonResponse.is_thread_running
+                if (isRunning) {
+                  echo "Thread is still running. Retrying in 30 seconds..."
+                } else {
+                  echo "Thread has completed. Moving to the next stage."
+                }
               }
             } catch (Exception e) {
-              error "Error while checking thread status: ${e.message}"
+              // Handle exceptions gracefully and retry
+              echo "Error while checking thread status: ${e.message}. Retrying in 30 seconds..."
+            }
+
+            // Wait before retrying
+            if (isRunning) {
+              sleep 30
             }
           }
-          echo "Thread has completed. Moving to the next stage."
         }
       }
     }
