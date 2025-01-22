@@ -21,6 +21,7 @@ pipeline {
           def attempts = 0
           def rawResponse = ""
           def hostUrl = params.HOST_URL
+          echo "Using HOST_URL: ${hostUrl}"
           while (attempts < retries) {
             try {
               // Run the curl command and capture the response body as plain text
