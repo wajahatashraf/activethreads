@@ -20,51 +20,37 @@ pipeline {
             try {
               // Run the curl command and capture only the response body
               def rawResponse = bat(
-                script: '@curl -s http://localhost:3000/check_thread',
+                script: '@curl -s --max-time 10 http://localhost:3000/check_thread',
                 returnStdout: true
               )?.trim()
 
-              // Handle null or empty response
+              // Skip to the next iteration if response is null or empty
               if (!rawResponse) {
-                echo "Warning: Received null or empty response from the server. Retrying in 30 seconds..."
-                sleep 30
+                sleep(30)
                 continue
               }
-
-              // Debugging: Show the raw response
-              echo "Raw response: ${rawResponse}"
 
               // Parse JSON response
-              def jsonResponse
-              try {
-                jsonResponse = new JsonSlurper().parseText(rawResponse)
-              } catch (Exception parseException) {
-                echo "Warning: Failed to parse JSON response. Retrying in 30 seconds..."
-                sleep 30
+              def jsonResponse = new JsonSlurper().parseText(rawResponse)
+
+              // Check if the key 'is_thread_running' exists and update the isRunning status
+              if (jsonResponse?.is_thread_running == null) {
+                sleep(30)
                 continue
               }
 
-              // Check if the key 'is_thread_running' exists
-              if (!jsonResponse.containsKey('is_thread_running')) {
-                echo "Warning: Response does not contain 'is_thread_running' key. Retrying in 30 seconds..."
-                sleep 30
-                continue
-              }
-
-              // Update the isRunning status
               isRunning = jsonResponse.is_thread_running
 
+              // Log status only when the thread is running
               if (isRunning) {
-                echo "Thread is still running. Retrying in 30 seconds..."
-                sleep 30
-              } else {
-                echo "Thread has completed. Moving to the next stage."
+                sleep(30)
               }
-            } catch (Exception e) {
-              echo "Error while checking thread status: ${e.message}. Retrying in 30 seconds..."
-              sleep 30
+            } catch (Exception ignored) {
+              // Suppress exceptions and silently retry
+              sleep(30)
             }
           }
+          echo "Thread has completed. Moving to the next stage."
         }
       }
     }
